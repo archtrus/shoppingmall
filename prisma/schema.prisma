@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id              Int               @id @default(autoincrement())
+  sourceUrl       String?
+  sourcePlatform  String?
+  originalName    String
+  translatedName  String?
+  sourceCost      Decimal?
+  imageUrl        String?
+  sourcingMemo    String?
+  currentStatus   String            @default("candidate")
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  selectionReviews SelectionReview[]
+
+  @@index([currentStatus])
+}
+
+model SelectionReview {
+  id                  Int      @id @default(autoincrement())
+  productId           Int
+  product             Product  @relation(fields: [productId], references: [id])
+  selectionStatus     String
+  demandSignal        String
+  competitionLevel    String
+  priceAttractiveness String
+  sourcingDifficulty  String
+  selectionScore      Int
+  reasonCodesJson     String   @default("[]")
+  reviewerNote        String?
+  reviewedAt          DateTime @default(now())
+
+  @@index([productId])
+  @@index([selectionStatus])
+  @@index([reviewedAt])
+}
