@@ -2,169 +2,190 @@
 
 ## Project Goal
 
-This project is an internal operating tool for running an overseas product purchasing-agency workflow while collecting high-quality data for future AI-powered product detail page generation.
+This project is a beginner-friendly internal SOP tool for running a small overseas purchasing-agency side business.
 
-The project is not meant to fully automate purchasing-agency operations in the first version. Its core purpose is to create a practical data loop:
+The long-term vision is to learn enough from real operation to later explore an AI product detail page generation service. That AI service is a future phase, not the current P0 priority.
+
+Current P0 focuses on the operating workflow before listing generation:
 
 ```text
-product candidate -> selection decision -> risk/margin review -> AI listing draft -> human edit -> sales/CS feedback
+sourcing session -> candidate product -> risk checklist -> margin estimate -> proceed/hold/exclude decision
 ```
-
-The most important long-term asset is the relationship between:
-
-- product candidate information
-- initial selection/exclusion reasoning
-- AI-generated listing drafts
-- human edits and edit reasons
-- final listing versions
-- later sales and CS performance
 
 ## Current Priority
 
-The current build target is the P0 MVP.
+P0 is the minimum internal operating system that lets a beginner operator:
 
-P0 workflow:
+1. Create sourcing sessions.
+2. Define category, domestic keyword, related keywords, platform, and strategy.
+3. Record manual demand and competition observations.
+4. Add candidate products under a sourcing session.
+5. Check beginner purchasing-agency risks.
+6. Estimate conservative margin manually.
+7. Decide `proceed`, `hold`, or `exclude`.
+8. Preserve review history.
 
-1. Product candidate intake
-2. Product selection scoring
-3. Risk screening
-4. Conservative margin calculation
-5. AI listing draft generation
-6. Human review, edit, approve/hold/reject, and version storage
-
-The first usable milestone should be smaller than the full P0:
+The first usable milestone is:
 
 ```text
-Register 10 product candidates and save proceed/hold/exclude decisions with reason codes.
+Create sourcing sessions and review 10 candidate products with risk, margin, and structured decision reasons.
 ```
-
-After that, add listing draft and human-edited version storage for selected products.
 
 ## Product Principles
 
-- Treat manual typing as friction. Prefer checkboxes, tags, select boxes, and structured inputs over long free-text fields.
-- Do not delete excluded products. Exclusion reasons are valuable training and sourcing data.
-- Record human review behavior as data, not just UI state.
-- Store listing outputs as versions. A product may have multiple listing drafts, edits, and final copies.
-- Prefer simple internal workflows over marketplace automation.
-- Optimize first for a tool the operator can actually use repeatedly.
+- Treat manual typing as friction. Prefer checkboxes, selects, and structured fields.
+- The app is an SOP support tool, not a marketplace automation tool.
+- Do not delete excluded products. Exclusion reasons are important operating data.
+- Preserve review history when a product moves from `hold` to `proceed`.
+- Keep the main workflow simple enough to use during real product research.
+- AI detail page generation should wait until sourcing, risk, and margin workflow is stable.
 
 ## P0 Scope
 
 Include:
 
-- URL/text/image-based product candidate registration
-- Product selection scoring
+- Sourcing session creation
+- Manual category/keyword/platform/strategy notes
+- Product candidate registration
+- Optional product-to-session linking
+- Beginner risk checklist
+- Conservative margin estimate
 - Selection status: `proceed`, `hold`, `exclude`
-- Selection reason codes
-- Risk checklist
-- Conservative margin calculator
-- Listing draft storage
-- Human edited listing storage
-- Review actions with reason codes
+- SOP-oriented reason codes
+- Recent decision history
 
 Defer:
 
-- Automatic product sourcing
-- Automatic keyword research
-- External marketplace crawling
+- AI listing generation
+- Listing version storage
+- AI prompt templates
+- CSV performance import
+- Automatic sourcing
+- External crawling
+- Keyword research API integration
 - Marketplace API integration
-- Multi-market one-click registration
-- Fulfillment/forwarder automation
+- SmartStore/Coupang integration
 - Chrome extension
 - Web clipper
-- Real-time sales API integration
+- Fulfillment or forwarder automation
+- Authentication
+- Deployment
+- Payment
 - Kakao/AlimTalk automation
+- Analytics dashboard
 
-## Product Selection Model
+## Data Model Guidance
 
-Product selection happens between product intake and risk/margin review.
+- Keep `SourcingSession` simple. Do not normalize keywords, categories, or platforms yet.
+- `Product` may optionally belong to a `SourcingSession`; existing products without a session remain valid.
+- Store checklist values as JSON text when that keeps the app simpler.
+- Store risk flags, margin assumptions, margin outputs, reason codes, and reviewer notes on each review record.
+- Every review save should create a new history record instead of overwriting earlier judgment.
 
-Selection fields:
+## Reason Codes
 
-- `selection_status`: `proceed`, `hold`, `exclude`
-- `demand_signal`: `high`, `medium`, `low`, `uncertain`
-- `competition_level`: `low`, `medium`, `high`
-- `price_attractiveness`: `good`, `uncertain`, `poor`
-- `sourcing_difficulty`: `easy`, `medium`, `hard`
-- `selection_score`: 0 to 100
-- `reason_codes`
-- `reviewer_note`
-
-Selection/exclusion reason codes:
+Use beginner-readable operational reason codes:
 
 - `DEMAND_UNCERTAIN`
 - `COMPETITION_HIGH`
 - `PRICE_NOT_COMPETITIVE`
-- `COST_OR_SHIPPING_UNFAVORABLE`
+- `MARGIN_TOO_LOW`
+- `SHIPPING_COST_RISK`
+- `HEAVY_OR_BULKY`
+- `FRAGILE_RISK`
 - `OPTIONS_COMPLEX`
 - `INSUFFICIENT_IMAGES_OR_INFO`
 - `IP_OR_BRAND_RISK`
 - `CERTIFICATION_OR_CUSTOMS_RISK`
+- `FOOD_COSMETICS_MEDICAL_RISK`
+- `ELECTRICAL_OR_BATTERY_RISK`
+- `CUSTOMS_OR_SHIPPING_RESTRICTED`
 - `CS_RISK_HIGH`
 - `OTHER`
 
 Rules:
 
 - `exclude` requires at least one reason code.
-- `hold` requires either a reason code or a reviewer note.
-- Status changes should create review history instead of overwriting previous decisions.
-- Only `proceed` and `hold` products should continue to risk and margin review.
+- `hold` requires either a reason code or reviewer note.
+- `proceed`, `hold`, and `exclude` decisions must remain in history.
 
 ## Suggested Technical Defaults
-
-For the first app implementation, prefer:
 
 - Next.js
 - TypeScript
 - SQLite for local MVP
 - Prisma for schema and migrations
-- Tailwind CSS
-- shadcn/ui or simple accessible components
+- Plain CSS or simple accessible components
 
-Do not add heavy infrastructure until the basic internal workflow works.
-
-Start with local-first development. Authentication, deployment, cloud database, analytics, and external integrations can come later.
+Avoid adding heavy infrastructure until the local SOP workflow works.
 
 ## Repository Documents
 
-- `preview.md`: product vision, system design principles, and staged roadmap.
-- `P0_SPEC.md`: implementation-facing P0 workflow and data concept specification.
-- `schema.sql`: optional executable reference schema for the current P0 data model.
+- `preview.md`: early product vision and system design notes.
+- `P0_SPEC.md`: implementation-facing P0 SOP specification.
+- `task_log.md`: current implementation history and next-step context.
+- `source/`: external planning and research notes from GPT.
+- `skills/purchase-agent-supervisor/`: project-local supervisor review skill.
 
-Keep these documents aligned when changing workflow or data model assumptions.
+Keep `AGENTS.md`, `P0_SPEC.md`, and `task_log.md` aligned when the workflow changes.
 
-## Development Guidance
+## Local Review Skills
 
-- Keep changes small and tied to the P0 workflow.
-- Prefer behavior-level implementation over speculative abstractions.
-- Do not introduce P1/P2/P3 features while implementing P0 unless explicitly requested.
-- Use structured data models for statuses, reason codes, review actions, and listing versions.
-- Preserve historical records where decisions or listing content change over time.
-- Avoid building dashboards before there is enough real operating data.
-- AI generation can be added after the draft/edit/version storage flow exists.
+This project has a local, explicit-call-only review skill.
 
-## Validation Checklist
+When the user says "슈퍼바이저 리뷰", "purchase-agent-supervisor로 리뷰", or asks for a purchasing-agency business/product/operation review, read and follow:
 
-Before considering P0 candidate selection complete, verify:
+```text
+skills/purchase-agent-supervisor/SKILL.md
+```
 
-- A product candidate can be created.
-- A selection review can be created for that product.
-- Products can be filtered by `proceed`, `hold`, and `exclude`.
-- Excluded products remain stored.
-- Excluded products require at least one reason code.
-- Hold products require either a reason code or note.
-- A product can move from `hold` to `proceed` while preserving previous selection history.
-- Only `proceed` and `hold` products can move into risk/margin review.
+For detailed review criteria, also read:
+
+```text
+skills/purchase-agent-supervisor/references/purchase_agent_supervisor.md
+```
+
+Do not treat this as an automatic trigger. Use it only when the user explicitly asks for that supervisor review mode.
 
 ## Collaboration Notes
 
-This is the user's first side project. When proposing next steps, keep them concrete, staged, and practical.
+This is the user's first side project. Keep next steps small, concrete, and practical.
 
-Favor explanations that clarify why a step matters:
+When the user asks conceptual questions, answer the question first before expanding implementation scope.
 
-- what it unlocks
-- what risk it avoids
-- how small the first milestone can be
+## Human-in-the-Loop Next Actions
 
-Do not over-implement vague intent. If the user is asking a conceptual question, answer the question first instead of immediately expanding scope.
+When proposing next actions, do not frame them only as software implementation tasks.
+
+Every next-step recommendation should include both:
+
+- what Codex or a developer should build or adjust
+- what the user should manually test in the real purchasing-agency workflow
+
+For this project, progress is validated by actual operator behavior, not only by passing builds.
+
+Good next-action recommendations should answer:
+
+- What should be implemented next?
+- What should the user try with real or realistic product candidates?
+- What observation will tell us whether the feature is useful?
+- What friction should the user watch for?
+- What decision does the test unlock?
+
+Default format for next actions:
+
+```text
+Build:
+- ...
+
+Human test:
+- ...
+
+Observe:
+- ...
+
+Decision after test:
+- ...
+```
+
+Avoid suggesting P1 features only because they are technically easy. Move beyond P0 only after the user has tested the P0 loop with real candidate products and has observed repeated friction or a clear next bottleneck.

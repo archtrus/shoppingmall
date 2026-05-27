@@ -8,35 +8,80 @@ datasource db {
 }
 
 model Product {
-  id              Int               @id @default(autoincrement())
-  sourceUrl       String?
-  sourcePlatform  String?
-  originalName    String
-  translatedName  String?
-  sourceCost      Decimal?
-  imageUrl        String?
-  sourcingMemo    String?
-  currentStatus   String            @default("candidate")
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id                Int               @id @default(autoincrement())
+  sourcingSessionId Int?
+  sourcingSession   SourcingSession?  @relation(fields: [sourcingSessionId], references: [id])
+  sourceUrl         String?
+  sourcePlatform    String?
+  originalName      String
+  translatedName    String?
+  sourceCost        Decimal?
+  sourceShippingFee Decimal?
+  imageUrl          String?
+  optionsMemo       String?
+  estimatedWeight   String?
+  estimatedVolume   String?
+  sourcingMemo      String?
+  currentStatus     String            @default("candidate")
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
   selectionReviews SelectionReview[]
 
   @@index([currentStatus])
+  @@index([sourcingSessionId])
+}
+
+model SourcingSession {
+  id                   Int       @id @default(autoincrement())
+  title                String
+  targetCategory       String?
+  domesticKeyword      String
+  relatedKeywords      String?
+  sourcePlatforms      String?
+  sourcingStrategy     String?
+  demandSignal         String?
+  competitionLevel     String?
+  targetCandidateCount Int?
+  memo                 String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  products             Product[]
+
+  @@index([createdAt])
+  @@index([domesticKeyword])
 }
 
 model SelectionReview {
-  id                  Int      @id @default(autoincrement())
-  productId           Int
-  product             Product  @relation(fields: [productId], references: [id])
-  selectionStatus     String
-  demandSignal        String
-  competitionLevel    String
-  priceAttractiveness String
-  sourcingDifficulty  String
-  selectionScore      Int
-  reasonCodesJson     String   @default("[]")
-  reviewerNote        String?
-  reviewedAt          DateTime @default(now())
+  id                                Int      @id @default(autoincrement())
+  productId                         Int
+  product                           Product  @relation(fields: [productId], references: [id])
+  selectionStatus                   String
+  demandSignal                      String
+  competitionLevel                  String
+  priceAttractiveness               String
+  sourcingDifficulty                String
+  selectionScore                    Int
+  reasonCodesJson                   String   @default("[]")
+  riskCodesJson                     String   @default("[]")
+  sourcePrice                       Decimal?
+  sourceShippingFee                 Decimal?
+  exchangeRate                      Decimal?
+  exchangeRateBufferPercent         Decimal?
+  paymentFeePercent                 Decimal?
+  estimatedInternationalShippingFee Decimal?
+  domesticShippingFee               Decimal?
+  marketplaceFeePercent             Decimal?
+  returnLossRiskBuffer              Decimal?
+  targetMarginPercent               Decimal?
+  expectedSellingPrice              Decimal?
+  totalEstimatedCost                Decimal?
+  breakEvenPrice                    Decimal?
+  recommendedSellingPrice           Decimal?
+  estimatedNetProfit                Decimal?
+  estimatedMarginRate               Decimal?
+  priceCompetitivenessMemo          String?
+  reviewerNote                      String?
+  reviewedAt                        DateTime @default(now())
 
   @@index([productId])
   @@index([selectionStatus])
