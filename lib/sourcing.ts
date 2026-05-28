@@ -16,13 +16,13 @@ export const sourcingCategories = [
   { value: "", label: "선택 안 함" },
   { value: "생활/수납", label: "생활/수납" },
   { value: "주방/수납", label: "주방/수납" },
-  { value: "욕실/청소", label: "욕실/청소" },
+  { value: "정리/청소", label: "정리/청소" },
   { value: "문구/사무", label: "문구/사무" },
   { value: "취미/DIY", label: "취미/DIY" },
   { value: "반려동물/비식품", label: "반려동물/비식품" },
-  { value: "차량용/비전기", label: "차량용/비전기" },
-  { value: "캠핑/소형소품", label: "캠핑/소형소품" },
-  { value: "패션잡화/저위험", label: "패션잡화/저위험" },
+  { value: "차량용 비전기", label: "차량용 비전기" },
+  { value: "캠핑/소형용품", label: "캠핑/소형용품" },
+  { value: "패션소화/저위험", label: "패션소화/저위험" },
   { value: "인테리어/소품", label: "인테리어/소품" },
   { value: "기타", label: "기타" }
 ] as const;

@@ -12,6 +12,8 @@ The P0 workflow is:
 sourcing session -> candidate product -> risk checklist -> margin estimate -> proceed/hold/exclude decision
 ```
 
+An in-app manual pre-sourcing guide helps the operator prepare before creating a sourcing session. External keyword and product research remain manual and out of scope for automation.
+
 ## 2. P0 Workflow
 
 1. Sourcing session

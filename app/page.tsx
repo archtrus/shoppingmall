@@ -10,6 +10,7 @@ import {
 import { sourcingCompetitionLabel, sourcingDemandLabel } from "@/lib/sourcing";
 import { ProductForm } from "@/components/product-form";
 import { SelectionReviewForm } from "@/components/selection-review-form";
+import { SourcingGuide } from "@/components/sourcing-guide";
 import { SourcingSessionForm } from "@/components/sourcing-session-form";
 import { WorkflowTabs } from "@/components/workflow-tabs";
 
@@ -65,6 +66,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
     })
   ]);
 
+  const typedProducts = allProducts as ProductWithReview[];
   const countMap = new Map(counts.map((item) => [item.currentStatus, item._count]));
   const totalCount = counts.reduce((sum, item) => sum + item._count, 0);
   const sessionOptions = sourcingSessions.map((item) => ({
@@ -75,19 +77,17 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
   const defaultSessionId =
     sourcingSessions.find((item) => item._count.products > 0)?.id ?? sourcingSessions[0]?.id;
   const selectedSessionId = requestedSessionId ?? defaultSessionId;
-  const candidateProducts = allProducts.filter(
-    (item) => item.sourcingSessionId === selectedSessionId
-  );
+  const candidateSessionKey = session === "none" ? "none" : String(selectedSessionId ?? "all");
+  const candidateProducts = filterProductsBySession(typedProducts, candidateSessionKey);
+  const selectedCandidateProduct = candidateProducts.find((item) => item.id === requestedProductId);
   const reviewSessionKey = session === "none" ? "none" : String(selectedSessionId ?? "all");
-  const reviewSessionProducts = filterProductsBySession(allProducts, reviewSessionKey);
+  const reviewSessionProducts = filterProductsBySession(typedProducts, reviewSessionKey);
   const selectedProduct =
     reviewSessionProducts.find((item) => item.id === requestedProductId) ??
     reviewSessionProducts[0];
   const reviewProducts = selectedProduct ? [selectedProduct] : [];
-  const historyProducts = filterProductsByStatus(
-    filterProductsBySession(allProducts, session),
-    status
-  );
+  const historySessionProducts = filterProductsBySession(typedProducts, session);
+  const historyProducts = filterProductsByStatus(historySessionProducts, status);
 
   return (
     <main className="page">
@@ -121,6 +121,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
       </header>
 
       <WorkflowTabs
+        guide={<SourcingGuide />}
         initialStep={step}
         sourcing={
           <div className="workflow-grid">
@@ -134,15 +135,16 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
         candidates={
           <div className="workflow-grid">
             <div className="panel">
-              <h2>상품 후보 등록</h2>
+              <h2>{selectedCandidateProduct ? "상품 후보 수정" : "상품 후보 등록"}</h2>
               <ProductForm
+                editProduct={selectedCandidateProduct}
                 selectedSourcingSessionId={selectedSessionId}
                 sourcingSessions={sessionOptions}
               />
             </div>
             <div className="stack">
               <SessionSelector
-                selectedSessionId={selectedSessionId}
+                selectedSessionKey={candidateSessionKey}
                 sourcingSessions={sourcingSessions}
               />
               <ProductList mode="candidate" products={candidateProducts} />
@@ -167,6 +169,7 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
               selectedStatus={status}
               sourcingSessions={sourcingSessions}
             />
+            <HistoryOverview products={historySessionProducts} />
             <nav className="filters" aria-label="상품 상태 필터">
               {filters.map((filter) => (
                 <Link
@@ -194,7 +197,21 @@ export default async function Home({ searchParams }: { searchParams: SearchParam
   );
 }
 
-type ProductWithReview = Awaited<ReturnType<typeof prisma.product.findMany>>[number] & {
+type ProductWithReview = {
+  id: number;
+  sourcingSessionId: number | null;
+  sourceUrl: string | null;
+  sourcePlatform: string | null;
+  originalName: string;
+  translatedName: string | null;
+  sourceCost: unknown;
+  sourceShippingFee: unknown;
+  imageUrl: string | null;
+  optionsMemo: string | null;
+  estimatedWeight: string | null;
+  estimatedVolume: string | null;
+  sourcingMemo: string | null;
+  currentStatus: string;
   sourcingSession: {
     title: string;
     domesticKeyword: string;
@@ -294,10 +311,10 @@ function SessionList({ sourcingSessions }: { sourcingSessions: SourcingSessionWi
 }
 
 function SessionSelector({
-  selectedSessionId,
+  selectedSessionKey,
   sourcingSessions
 }: {
-  selectedSessionId: number | undefined;
+  selectedSessionKey: string;
   sourcingSessions: SourcingSessionWithCount[];
 }) {
   if (sourcingSessions.length === 0) {
@@ -309,13 +326,11 @@ function SessionSelector({
       <input name="step" type="hidden" value="candidates" />
       <div className="field">
         <label htmlFor="candidate-session">표시할 소싱 세션</label>
-        <select defaultValue={selectedSessionId} id="candidate-session" name="session">
-          {sourcingSessions.map((item) => (
-            <option key={item.id} value={item.id}>
-              {item.title} · {item.domesticKeyword} ({item._count.products}개)
-            </option>
-          ))}
-        </select>
+        <SessionOptions
+          selectedSessionKey={selectedSessionKey}
+          selectId="candidate-session"
+          sourcingSessions={sourcingSessions}
+        />
       </div>
       <button className="button secondary" type="submit">
         세션 보기
@@ -368,7 +383,7 @@ function ProductSelector({
     <form action="/" className="selector-bar two-selectors" method="get">
       <input name="step" type="hidden" value="review" />
       <div className="field">
-        <label htmlFor="review-session">리스크·마진 소싱 세션</label>
+        <label htmlFor="review-session">리스크/마진 소싱 세션</label>
         <SessionOptions
           selectedSessionKey={selectedSessionKey}
           selectId="review-session"
@@ -420,34 +435,25 @@ function SessionOptions({
   );
 }
 
-function countByStatus(products: Array<{ currentStatus: string }>, status: string) {
-  return products.filter((product) => product.currentStatus === status).length;
-}
+function HistoryOverview({ products }: { products: ProductWithReview[] }) {
+  const summary = [
+    { label: "전체", value: products.length },
+    { label: "진행", value: products.filter((item) => item.currentStatus === "selection_proceed").length },
+    { label: "보류", value: products.filter((item) => item.currentStatus === "selection_hold").length },
+    { label: "제외", value: products.filter((item) => item.currentStatus === "selection_exclude").length },
+    { label: "검토 전", value: products.filter((item) => item.currentStatus === "candidate").length }
+  ];
 
-function filterProductsBySession(products: ProductWithReview[], sessionKey: string) {
-  if (sessionKey === "all") return products;
-  if (sessionKey === "none") return products.filter((item) => item.sourcingSessionId === null);
-  const sessionId = parsePositiveInt(sessionKey);
-  if (!sessionId) return products;
-  return products.filter((item) => item.sourcingSessionId === sessionId);
-}
-
-function filterProductsByStatus(products: ProductWithReview[], status: string) {
-  if (status === "all") return products;
-  return products.filter((item) => item.currentStatus === status);
-}
-
-function historyHref({ session, status }: { session: string; status: string }) {
-  const params = new URLSearchParams({ step: "history" });
-  if (session !== "all") params.set("session", session);
-  if (status !== "all") params.set("status", status);
-  return `/?${params.toString()}`;
-}
-
-function parsePositiveInt(value: string | undefined) {
-  if (!value) return undefined;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  return (
+    <section className="history-overview" aria-label="결정 이력 요약">
+      {summary.map((item) => (
+        <div key={item.label}>
+          <span>{item.label}</span>
+          <strong>{item.value}</strong>
+        </div>
+      ))}
+    </section>
+  );
 }
 
 function ProductList({
@@ -479,7 +485,10 @@ function ProductCard({
   const latestStatus = latestReview?.selectionStatus;
   const reasonCodes = latestReview ? parseCodes(latestReview.reasonCodesJson, selectionReasonCodes) : [];
   const riskCodes = latestReview ? parseCodes(latestReview.riskCodesJson, riskChecklistCodes) : [];
-  const nextAction = nextActionFor(latestStatus);
+  const nextAction = nextActionFor(product, latestStatus);
+  const missingItems = missingInfoFor(product, latestReview, riskCodes, reasonCodes);
+  const editHref = candidateHref(product);
+  const reviewHref = reviewHrefFor(product);
 
   return (
     <article className="product-card">
@@ -487,7 +496,13 @@ function ProductCard({
         <div>
           <div className="product-title-row">
             <div>
-              <h3 className="product-title">{product.originalName}</h3>
+              <h3 className="product-title">
+                {mode === "candidate" ? (
+                  <Link href={editHref}>{product.originalName}</Link>
+                ) : (
+                  product.originalName
+                )}
+              </h3>
               {product.translatedName ? <p>{product.translatedName}</p> : null}
             </div>
             <span className={`badge ${latestStatus ?? ""}`}>
@@ -503,7 +518,7 @@ function ProductCard({
               <span>세션 없음</span>
             )}
             {product.sourcePlatform ? <span>{product.sourcePlatform}</span> : null}
-            {product.sourceCost ? <span>원가 {String(product.sourceCost)} </span> : null}
+            {product.sourceCost ? <span>원가 {String(product.sourceCost)}</span> : null}
             {product.sourceShippingFee ? <span>현지배송 {String(product.sourceShippingFee)}</span> : null}
             {product.sourceUrl ? (
               <a href={product.sourceUrl} target="_blank" rel="noreferrer">
@@ -513,7 +528,27 @@ function ProductCard({
           </div>
           {product.optionsMemo ? <p className="history">옵션: {product.optionsMemo}</p> : null}
           {product.sourcingMemo ? <p className="history">{product.sourcingMemo}</p> : null}
-          <p className={`next-action ${nextAction.tone}`}>다음 행동: {nextAction.label}</p>
+          <Link className={`next-action ${nextAction.tone}`} href={nextAction.href}>
+            다음 행동: {nextAction.label}
+          </Link>
+          {mode === "history" && missingItems.length > 0 ? (
+            <div className="missing-info" aria-label="부족한 정보">
+              <span>부족한 정보</span>
+              {missingItems.map((item) => (
+                <em key={item}>{item}</em>
+              ))}
+            </div>
+          ) : null}
+          {mode === "history" ? (
+            <div className="session-actions">
+              <Link className="inline-action secondary" href={editHref}>
+                후보 수정
+              </Link>
+              <Link className="inline-action" href={reviewHref}>
+                다시 검토
+              </Link>
+            </div>
+          ) : null}
           {mode !== "candidate" ? (
             <ReviewSummary
               latestReview={latestReview}
@@ -552,19 +587,6 @@ function ProductCard({
   );
 }
 
-function nextActionFor(status: string | undefined) {
-  if (status === "proceed") {
-    return { label: "등록 준비 후보", tone: "proceed" };
-  }
-  if (status === "hold") {
-    return { label: "추가 확인 필요", tone: "hold" };
-  }
-  if (status === "exclude") {
-    return { label: "제외 사유 기록 완료", tone: "exclude" };
-  }
-  return { label: "리스크·마진 검토 필요", tone: "candidate" };
-}
-
 function ReviewSummary({
   latestReview,
   reasonCodes,
@@ -577,13 +599,13 @@ function ReviewSummary({
   reviews: ProductWithReview["selectionReviews"];
 }) {
   if (!latestReview) {
-    return <p className="history">아직 선정 리뷰가 없습니다.</p>;
+    return <p className="history">아직 선정 이력이 없습니다.</p>;
   }
 
   return (
     <div className="history">
       <p>
-        최근 선정: {statusLabel(latestReview.selectionStatus)} · 점수 {latestReview.selectionScore} · 사유{" "}
+        최근 결정: {statusLabel(latestReview.selectionStatus)} · 점수 {latestReview.selectionScore} · 사유{" "}
         {reasonCodes.length > 0 ? reasonCodes.join(", ") : "없음"}
       </p>
       {riskCodes.length > 0 ? <p>리스크: {riskCodes.join(", ")}</p> : null}
@@ -606,6 +628,88 @@ function ReviewSummary({
       ) : null}
     </div>
   );
+}
+
+function nextActionFor(product: ProductWithReview, status: string | undefined) {
+  if (status === "proceed") {
+    return {
+      href: historyHref({ session: productSessionKey(product), status: "selection_proceed" }),
+      label: "결정 이력 확인",
+      tone: "proceed"
+    };
+  }
+  if (status === "hold") {
+    return { href: reviewHrefFor(product), label: "추가 확인 후 재검토", tone: "hold" };
+  }
+  if (status === "exclude") {
+    return {
+      href: historyHref({ session: productSessionKey(product), status: "selection_exclude" }),
+      label: "제외 사유 확인",
+      tone: "exclude"
+    };
+  }
+  return { href: reviewHrefFor(product), label: "리스크/마진 검토", tone: "candidate" };
+}
+
+function candidateHref(product: ProductWithReview) {
+  return `/?step=candidates&session=${productSessionKey(product)}&product=${product.id}`;
+}
+
+function reviewHrefFor(product: ProductWithReview) {
+  return `/?step=review&session=${productSessionKey(product)}&product=${product.id}`;
+}
+
+function productSessionKey(product: ProductWithReview) {
+  return product.sourcingSessionId ? String(product.sourcingSessionId) : "none";
+}
+
+function missingInfoFor(
+  product: ProductWithReview,
+  latestReview: ProductWithReview["selectionReviews"][number] | undefined,
+  riskCodes: string[],
+  reasonCodes: string[]
+) {
+  const missing = [];
+  if (!product.sourceUrl || !product.sourceCost || !product.imageUrl) missing.push("후보 정보 부족");
+  if (!latestReview) return [...missing, "검토 없음"];
+  if (!latestReview.recommendedSellingPrice) missing.push("마진 미계산");
+  if (riskCodes.length === 0) missing.push("리스크 체크 없음");
+  if (latestReview.selectionStatus === "hold" && !latestReview.reviewerNote && reasonCodes.length === 0) {
+    missing.push("보류 사유 부족");
+  } else if (latestReview.selectionStatus === "hold" && !latestReview.reviewerNote) {
+    missing.push("보류 메모 부족");
+  }
+  return missing;
+}
+
+function countByStatus(products: Array<{ currentStatus: string }>, status: string) {
+  return products.filter((product) => product.currentStatus === status).length;
+}
+
+function filterProductsBySession(products: ProductWithReview[], sessionKey: string) {
+  if (sessionKey === "all") return products;
+  if (sessionKey === "none") return products.filter((item) => item.sourcingSessionId === null);
+  const sessionId = parsePositiveInt(sessionKey);
+  if (!sessionId) return products;
+  return products.filter((item) => item.sourcingSessionId === sessionId);
+}
+
+function filterProductsByStatus(products: ProductWithReview[], status: string) {
+  if (status === "all") return products;
+  return products.filter((item) => item.currentStatus === status);
+}
+
+function historyHref({ session, status }: { session: string; status: string }) {
+  const params = new URLSearchParams({ step: "history" });
+  if (session !== "all") params.set("session", session);
+  if (status !== "all") params.set("status", status);
+  return `/?${params.toString()}`;
+}
+
+function parsePositiveInt(value: string | undefined) {
+  if (!value) return undefined;
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
 }
 
 function parseCodes(

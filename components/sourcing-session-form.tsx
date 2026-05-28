@@ -28,16 +28,16 @@ export function SourcingSessionForm() {
     <form action={formAction} className="form-grid" ref={formRef}>
       <div className="field">
         <label htmlFor="title">세션 제목</label>
-        <input id="title" name="title" placeholder="욕실 수납용품 탐색" required />
+        <input id="title" name="title" placeholder="정리 수납용품 탐색" required />
       </div>
       <SelectField label="대상 카테고리" name="targetCategory" options={sourcingCategories} />
       <div className="field">
         <label htmlFor="domesticKeyword">국내 검색 키워드</label>
-        <input id="domesticKeyword" name="domesticKeyword" placeholder="욕실 수납 선반" required />
+        <input id="domesticKeyword" name="domesticKeyword" placeholder="정리 수납 선반" required />
       </div>
       <div className="field">
         <label htmlFor="relatedKeywords">관련 키워드</label>
-        <input id="relatedKeywords" name="relatedKeywords" placeholder="무타공, 코너선반, 정리" />
+        <input id="relatedKeywords" name="relatedKeywords" placeholder="무타공, 코너선반, 정리함" />
       </div>
       <SelectField label="소싱 플랫폼" name="sourcePlatforms" options={sourcingPlatforms} />
       <div className="field">
@@ -45,7 +45,7 @@ export function SourcingSessionForm() {
         <textarea
           id="sourcingStrategy"
           name="sourcingStrategy"
-          placeholder="작고 가벼운 비전기 생활잡화 위주로 확인"
+          placeholder="작고 가벼운 비전기 생활소품 위주로 확인"
         />
       </div>
       <div className="selection-grid">

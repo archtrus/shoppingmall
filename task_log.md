@@ -1,5 +1,160 @@
 # Task Log
 
+## 2026-05-28 P0 Workflow Structure Improvements
+
+### App Changes
+
+- Made `다음 행동` on product cards clickable so it moves to the relevant review or history step.
+- Added candidate product editing from the candidate step without adding delete behavior.
+- Added a lightweight margin/selling-price preview inside the risk/margin review form.
+- Added decision-history summary counts and per-product missing-information chips.
+- Added `후보 수정` and `다시 검토` actions to decision-history cards.
+- No Prisma schema, database model, crawling, external API, AI generation, auth, deployment, or dashboard changes were made.
+
+### Commands Run
+
+Passed:
+
+```text
+npm run lint
+npm run build
+```
+
+### Local Smoke Check
+
+Checked on:
+
+```text
+http://localhost:3101/
+```
+
+Verified:
+
+- `/?step=history` renders history summary, missing-info chips, and action links.
+- Candidate edit URL opens the candidate form in edit mode.
+- Risk/margin page renders selling-price preview content.
+
+### Human Test Suggested
+
+Build:
+- Keep this as a workflow-structure improvement, not a new analytics/dashboard feature.
+
+Human test:
+- Open decision history and click `다시 검토`.
+- Open candidate products and click a product title to edit it.
+- Change one candidate field and save.
+- Enter margin assumptions and watch the preview before saving a review.
+
+Observe:
+- Whether next-action links make the workflow feel guided.
+- Whether candidate editing removes the need to recreate products.
+- Whether missing-info chips help decide what to fix next.
+
+Decision after test:
+- If this feels useful, keep the structure and test with 10 realistic candidates.
+- If history becomes visually noisy, reduce missing-info chips before adding any new P0 feature.
+
+## 2026-05-28 Lightweight Guide Checklist
+
+### App Changes
+
+- Reworked the `운영 가이드` copy into a lighter P0 checklist.
+- Added a small `세션 만들기 전 1분 확인` list with five beginner-safe checks.
+- Kept the guide manual and internal: no database, Prisma, automation, crawling, external API, AI generation, auth, or deployment changes.
+
+### Human Test Suggested
+
+Build:
+- Keep the checklist short and use it only as a pre-sourcing prompt.
+
+Human test:
+- Open `/`.
+- Read the checklist before creating a sourcing session.
+- Pick one beginner-safe category and register two candidate products.
+
+Observe:
+- Whether the checklist feels light enough to use during real research.
+- Whether it helps decide when to create the sourcing session.
+
+Decision after test:
+- If it helps, keep it as the guide ending.
+- If it still feels too long, remove or merge items before adding any new P0 feature.
+
+## 2026-05-28 New Chat Handoff
+
+### Current State
+
+- P0 MVP is still focused on a beginner-friendly purchasing-agency SOP:
+
+```text
+manual pre-sourcing guide -> sourcing session -> candidate product -> risk checklist -> conservative margin estimate -> proceed/hold/exclude decision -> decision history
+```
+
+- Latest implemented change: added the first `운영 가이드` workflow tab.
+- `/` now opens the manual pre-sourcing guide.
+- `/?step=sourcing`, `/?step=candidates`, `/?step=review`, and `/?step=history` remain the existing workflow routes.
+- The guide explains that domestic keyword research and overseas source product discovery are external/manual tasks, not app automation.
+- No Prisma schema, server action, database model, crawling, external API, AI generation, auth, or deployment changes were made.
+
+### Latest Verification
+
+Passed:
+
+```text
+npm run build
+npm run lint
+temporary Next dev route smoke check on port 3101
+```
+
+### Recommended Next Conversation Start
+
+- Review the implemented `운영 가이드` tab from a purchasing-agency supervisor perspective.
+- Then do a human workflow test with one beginner-safe category, one sourcing session, and two candidate products.
+- Decide whether the guide reduces "what should I do first?" confusion before adding more software features.
+
+## 2026-05-28 Manual Pre-Sourcing Guide
+
+### App Changes
+
+- Added a manual pre-sourcing `운영 가이드` tab before sourcing sessions.
+- Clarified that domestic keyword research and overseas source product discovery are external/manual P0-prep tasks.
+- The guide points operators to record research results through sourcing sessions and candidate product fields instead of integrating external tools.
+- Added a direct `소싱 세션 만들기` CTA from the guide to `?step=sourcing`.
+- Did not change Prisma models, server actions, or database state.
+
+### Commands Run
+
+Passed:
+
+```text
+npm run build
+npm run lint
+temporary Next dev route smoke check on port 3101
+```
+
+### Human Test Suggested
+
+Build:
+- Keep the guide tab only; keep manual research external.
+
+Human test:
+- Open the app at `/`.
+- Start from `운영 가이드`.
+- Choose one beginner-safe category.
+- Use external tools manually for 10-20 minutes.
+- Create one sourcing session.
+- Add 2 candidate products.
+
+Observe:
+- Whether the guide reduces "what should I do first?" confusion.
+- Whether the operator knows what to record in `domesticKeyword`, `relatedKeywords`, demand/competition notes, and product source fields.
+- Whether any guide section feels too long during real research.
+
+Decision after test:
+- If it helps, keep the guide as the P0 entry point.
+- If confusion remains, adjust guide wording before adding new features.
+- Do not move to automation or AI listing generation until the manual 10-candidate loop is tested.
+
 ## 2026-05-27
 
 ### Project Setup Context

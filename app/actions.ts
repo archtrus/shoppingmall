@@ -161,6 +161,60 @@ export async function createProduct(
   return { ok: true, message: "상품 후보를 등록했습니다." };
 }
 
+export async function updateProduct(
+  _previousState: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const productId = z.coerce.number().int().positive().safeParse(formData.get("productId"));
+
+  if (!productId.success) {
+    return { ok: false, message: "수정할 후보 상품을 찾을 수 없습니다." };
+  }
+
+  const parsed = productSchema.safeParse({
+    sourcingSessionId: formData.get("sourcingSessionId"),
+    sourceUrl: formData.get("sourceUrl"),
+    sourcePlatform: formData.get("sourcePlatform"),
+    originalName: formData.get("originalName"),
+    translatedName: formData.get("translatedName"),
+    sourceCost: formData.get("sourceCost"),
+    sourceShippingFee: formData.get("sourceShippingFee"),
+    imageUrl: formData.get("imageUrl"),
+    optionsMemo: formData.get("optionsMemo"),
+    estimatedWeight: formData.get("estimatedWeight"),
+    estimatedVolume: formData.get("estimatedVolume"),
+    sourcingMemo: formData.get("sourcingMemo")
+  });
+
+  if (!parsed.success) {
+    return { ok: false, message: parsed.error.issues[0]?.message ?? "입력값을 확인해주세요." };
+  }
+
+  const data = parsed.data;
+
+  await prisma.product.update({
+    where: { id: productId.data },
+    data: {
+      sourcingSessionId: data.sourcingSessionId || null,
+      sourceUrl: data.sourceUrl || null,
+      sourcePlatform: data.sourcePlatform || null,
+      originalName: data.originalName,
+      translatedName: data.translatedName || null,
+      sourceCost: typeof data.sourceCost === "number" ? data.sourceCost : null,
+      sourceShippingFee:
+        typeof data.sourceShippingFee === "number" ? data.sourceShippingFee : null,
+      imageUrl: data.imageUrl || null,
+      optionsMemo: data.optionsMemo || null,
+      estimatedWeight: data.estimatedWeight || null,
+      estimatedVolume: data.estimatedVolume || null,
+      sourcingMemo: data.sourcingMemo || null
+    }
+  });
+
+  revalidatePath("/");
+  return { ok: true, message: "후보 상품 정보를 수정했습니다." };
+}
+
 export async function createSelectionReview(
   _previousState: ActionState,
   formData: FormData
